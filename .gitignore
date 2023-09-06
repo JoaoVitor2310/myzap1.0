@@ -1,0 +1,6 @@
+node_modules
+tokens*
+tmp
+.env.prod
+deploy.sh
+database/*.sqlite
