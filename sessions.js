@@ -95,7 +95,7 @@ module.exports = class Sessions {
                     console.log('#### status=' + statusSession + ' sessionName=' + session);
                 }, {
                 folderNameToken: 'tokens',
-                headless: true,
+                headless: 'new',
                 devtools: false,
                 useChrome: false,
                 debug: false,
@@ -158,7 +158,7 @@ module.exports = class Sessions {
                     console.log('- Session name: ', session);
                 },
                 folderNameToken: 'tokens',
-                headless: true,
+                headless: 'new',
                 devtools: false,
                 useChrome: true,
                 debug: false,
