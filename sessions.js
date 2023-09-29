@@ -114,6 +114,7 @@ module.exports = class Sessions {
                     '--enable-features=NetworkService',
                     '--disable-setuid-sandbox',
                     '--no-sandbox',
+                    '--user-data-dir', // tentativa para iniciar mais de 1 sessão
                     // Extras
                     '--disable-webgl',
                     '--disable-threaded-animation',
@@ -177,6 +178,7 @@ module.exports = class Sessions {
                     '--enable-features=NetworkService',
                     '--disable-setuid-sandbox',
                     '--no-sandbox',
+                    '--user-data-dir', // tentativa para iniciar mais de 1 sessão
                     // Extras
                     '--disable-webgl',
                     '--disable-threaded-animation',
