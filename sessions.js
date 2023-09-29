@@ -146,7 +146,7 @@ module.exports = class Sessions {
             return client;
         } //initSession
         if (process.env.ENGINE === 'WPPCONNECT') {
-            const browserWSEndpoint = 'ws://62.72.11.236:3333';
+            const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
             const client = await wppconnect.create({
                 browserWSEndpoint,
                 session: session.name,
@@ -161,11 +161,15 @@ module.exports = class Sessions {
                     console.log('- Session name: ', session);
                 },
                 folderNameToken: 'tokens',
-                headless: true, // new pq o puppeter mandow warning
+                headless: true, // new pq o puppeter mandou warning
                 devtools: false,
                 useChrome: true, // True para usar o chrome ao inves de chromium
                 debug: false,
                 logQR: true,
+                puppeteerOptions: {
+                    // executablePath: '/usr/bin/chromium'
+                    userDataDir: './tokens/mySessionName'
+                },
                 browserArgs: [
                     '--log-level=3',
                     '--no-default-browser-check',
@@ -205,7 +209,7 @@ module.exports = class Sessions {
                 waitForLogin: true,
 
             });
-            wppconnect.defaultLogger.level = 'silly'
+            wppconnect.defaultLogger.level = 'debug'
             session.state = "CONNECTED";
             return client;
         }
