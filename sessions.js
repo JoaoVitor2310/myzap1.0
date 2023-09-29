@@ -97,7 +97,7 @@ module.exports = class Sessions {
                 folderNameToken: 'tokens',
                 headless: true,
                 devtools: false,
-                useChrome: false,
+                useChrome: true, // True para usar o chrome ao inves de chromium
                 debug: false,
                 logQR: true,
                 browserArgs: [
@@ -161,7 +161,7 @@ module.exports = class Sessions {
                 folderNameToken: 'tokens',
                 headless: true,
                 devtools: false,
-                useChrome: true,
+                useChrome: true, // True para usar o chrome ao inves de chromium
                 debug: false,
                 logQR: true,
                 browserArgs: [
