@@ -95,7 +95,7 @@ module.exports = class Sessions {
                     console.log('#### status=' + statusSession + ' sessionName=' + session);
                 }, {
                 folderNameToken: 'tokens',
-                headless: 'new',
+                headless: true, // new pq o puppeter mandow warning
                 devtools: false,
                 useChrome: true, // True para usar o chrome ao inves de chromium
                 debug: false,
@@ -146,7 +146,9 @@ module.exports = class Sessions {
             return client;
         } //initSession
         if (process.env.ENGINE === 'WPPCONNECT') {
+            const browserWSEndpoint = 'ws://62.72.11.236:3333';
             const client = await wppconnect.create({
+                browserWSEndpoint,
                 session: session.name,
                 catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
                     session.state = "QRCODE";
@@ -159,7 +161,7 @@ module.exports = class Sessions {
                     console.log('- Session name: ', session);
                 },
                 folderNameToken: 'tokens',
-                headless: 'new',
+                headless: true, // new pq o puppeter mandow warning
                 devtools: false,
                 useChrome: true, // True para usar o chrome ao inves de chromium
                 debug: false,

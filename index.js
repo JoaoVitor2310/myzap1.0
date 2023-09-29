@@ -13,7 +13,6 @@ app.use(cors());
 // app.use(timeout(120000));
 // app.use(haltOnTimedout);
 app.use(express.json({
-    limit: '20mb',
     extended: true
 }));
 
