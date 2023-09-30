@@ -88,15 +88,14 @@ module.exports = class Sessions {
         // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
         const client = await wppconnect.create({
             session: session.name,
-            // browserWS,
+            
             catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
                 console.log('ENTROU NO CATCHQR');
                 
                 session.state = "QRCODE";
                 console.log('session.state: ' + session.state);
 
-                session.qrcode = base64Qrimg;
-                console.log('session.qrcode: ' + session.qrcode);
+                session.qrcode = base64Qrimg; // O qrcode de fato, n precisa logar
                 
                 session.CodeasciiQR = asciiQR;
                 console.log('session.CodeasciiQR: ' + session.CodeasciiQR);
@@ -160,10 +159,10 @@ module.exports = class Sessions {
             createPathFileToken: true,
             waitForLogin: true,
 
-        });
+        }).then((client) => startClient(client)); // Coloquei isso por conta da documentação do wppconnect
         wppconnect.defaultLogger.level = 'debug'
         session.state = "CONNECTED";
-        console.log('client: ' + JSON.stringify(client));
+        // console.log('client: ' + JSON.stringify(client)); Não dá para logar infelizmente
         return client;
     }
 
