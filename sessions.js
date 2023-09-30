@@ -19,13 +19,13 @@ module.exports = class Sessions {
             console.log("Sessão não existe, criando uma nova.");
             session = await Sessions.addSession(sessionName);
         } else if (["CLOSED"].includes(session.state)) { //restart session? Sessão existe mas tá fechada(inativa, sem uso)?
-            console.log('Sessão existe mas tá fechada')
             console.log("session.state == CLOSED");
             session.state = "STARTING";
             session.status = 'notLogged';
             session.client = Sessions.initSession(sessionName);
             Sessions.setup(sessionName);
-        } else if (["CONFLICT", "UNPAIRED", "UNLAUNCHED"].includes(session.state)) { // Sessão existe mas está em conflito ou não pareada
+        } else if (["CONFLICT", "UNPAIRED", "UNLAUNCHED"].includes(session.state)) { // Sessão existe mas agr vai gerar o QRCODE PARA INICIÁ-LA
+            console.log('SEGUNDA SESSÃO?');
             console.log("client.useHere()");
             session.client.then(client => {
                 client.useHere();
@@ -58,7 +58,7 @@ module.exports = class Sessions {
         console.log("Nova Sessão criada: " + newSession.name);
         console.log("newSession.state: " + newSession.state);
 
-        //setup session
+        
         newSession.client = Sessions.initSession(sessionName); // Inicia a sessão no wppconnect
         Sessions.setup(sessionName);
 
@@ -85,10 +85,10 @@ module.exports = class Sessions {
                 console.log("nao tinha token na nuvem");
             }
         }
-        const browserWSEndpoint = 'wss://62.72.11.236:3333'; // Url da vps gestor master
+        // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
         const client = await wppconnect.create({
             session: session.name,
-            browserWSEndpoint,
+            // browserWS,
             catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
                 session.state = "QRCODE";
                 session.qrcode = base64Qrimg;
@@ -103,7 +103,6 @@ module.exports = class Sessions {
             },
             folderNameToken: 'tokens',
             debug: true,
-            browserWS: true,
             headless: true, // new pq o puppeter mandou warning
             devtools: false,
             useChrome: true, // True para usar o chrome ao inves de chromium
@@ -154,6 +153,7 @@ module.exports = class Sessions {
         });
         wppconnect.defaultLogger.level = 'debug'
         session.state = "CONNECTED";
+        console.log('client: ' + JSON.stringify(client));
         return client;
     }
 
@@ -190,7 +190,7 @@ module.exports = class Sessions {
                         }, 2000);
                     }
                 }
-                console.log("Session.state: " + state);
+                console.log("Session.state: " + state); // Aqui ele printa o status
             }); //.then((client) => Sessions.startProcess(client));
             client.onMessage(async (message) => { // De olho em mensagens e ações
                 var session = Sessions.getSession(sessionName);
@@ -215,7 +215,7 @@ module.exports = class Sessions {
                 }
             });
         });
-    } //setup
+    }
 
     static async closeSession(sessionName) {
         var session = Sessions.getSession(sessionName);
