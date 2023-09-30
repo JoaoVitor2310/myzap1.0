@@ -35,7 +35,7 @@ module.exports = class Sessions {
             console.log("session.state: " + session.state);
         }
         return session;
-    } //start
+    }
 
     static async getStatus(sessionName, options = []) {
         Sessions.options = Sessions.options || options;
@@ -67,6 +67,7 @@ module.exports = class Sessions {
 
     static async initSession(sessionName) {
         var session = Sessions.getSession(sessionName); // Procura se já existe essa sessão, dessa vez vai achar
+        console.log('sessão a ser iniciada: '+ session.name);
         session.browserSessionToken = null; // Coloca o browserSessionToken como null
         if (Sessions.options.jsonbinio_secret_key !== undefined) {//se informou secret key pra salvar na nuvem
             //busca token da session na nuvem
@@ -86,6 +87,7 @@ module.exports = class Sessions {
             }
         }
         // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
+        console.log('VAI CRIAR O CLIENT AGORA');
         const client = await wppconnect.create({
             session: session.name,
             
@@ -94,7 +96,7 @@ module.exports = class Sessions {
                 
                 session.state = "QRCODE";
                 console.log('session.state: ' + session.state);
-
+                
                 session.qrcode = base64Qrimg; // O qrcode de fato, n precisa logar
                 
                 session.CodeasciiQR = asciiQR;
@@ -102,7 +104,7 @@ module.exports = class Sessions {
                 
                 session.CodeurlCode = urlCode;
                 console.log('session.CodeurlCode: ' + session.CodeurlCode);
-
+                
                 console.log("QR Code gerado:", urlCode); // 
                 console.log('Attempts:' + attempts);
             },
@@ -159,9 +161,8 @@ module.exports = class Sessions {
             createPathFileToken: true,
             waitForLogin: true,
 
-        }).then((client) => start(client)) // Peguei direto da doc do wppconnect
-        .catch((error) => console.log(error));
-
+        })
+        console.log('CLIENT CRIADO?');
         wppconnect.defaultLogger.level = 'debug'
         session.state = "CONNECTED";
         // console.log('client: ' + JSON.stringify(client)); Não dá pra logar infelizmente
