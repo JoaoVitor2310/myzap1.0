@@ -83,68 +83,7 @@ module.exports = class Sessions {
                 console.log("nao tinha token na nuvem");
             }
         }//if jsonbinio_secret_key
-        if (process.env.ENGINE === 'VENOM') {
-            const client = await venom.create(
-                sessionName,
-                (base64Qr, asciiQR, attempts) => {
-                    session.state = "QRCODE";
-                    session.qrcode = base64Qr;
-                },
-                // statusFind
-                (statusSession, session) => {
-                    console.log('#### status=' + statusSession + ' sessionName=' + session);
-                }, {
-                folderNameToken: 'tokens',
-                headless: true, // new pq o puppeter mandow warning
-                devtools: false,
-                useChrome: true, // True para usar o chrome ao inves de chromium
-                debug: false,
-                logQR: true,
-                browserArgs: [
-                    '--log-level=3',
-                    '--no-default-browser-check',
-                    '--disable-site-isolation-trials',
-                    '--no-experiments',
-                    '--ignore-gpu-blacklist',
-                    '--ignore-certificate-errors',
-                    '--ignore-certificate-errors-spki-list',
-                    '--disable-gpu',
-                    '--disable-extensions',
-                    '--disable-default-apps',
-                    '--enable-features=NetworkService',
-                    '--disable-setuid-sandbox',
-                    '--no-sandbox',
-                    '--user-data-dir', // tentativa para iniciar mais de 1 sessão
-                    // Extras
-                    '--disable-webgl',
-                    '--disable-threaded-animation',
-                    '--disable-threaded-scrolling',
-                    '--disable-in-process-stack-traces',
-                    '--disable-histogram-customizer',
-                    '--disable-gl-extensions',
-                    '--disable-composited-antialiasing',
-                    '--disable-canvas-aa',
-                    '--disable-3d-apis',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-accelerated-jpeg-decoding',
-                    '--disable-accelerated-mjpeg-decode',
-                    '--disable-app-list-dismiss-on-blur',
-                    '--disable-accelerated-video-decode',
-                ],
-                refreshQR: 15000,
-                autoClose: 60000,
-                disableSpins: true,
-                disableWelcome: false,
-                createPathFileToken: true,
-                waitForLogin: true
-            },
-                session.browserSessionToken
-            );
-            var browserSessionToken = await client.getSessionTokenBrowser();
-            console.log("usou isso no create: " + JSON.stringify(browserSessionToken));
-            session.state = "CONNECTED";
-            return client;
-        } //initSession
+        //Parte do Venom ficava aqui, tirei pq não vou usar
         if (process.env.ENGINE === 'WPPCONNECT') {
             const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
             const client = await wppconnect.create({
@@ -155,6 +94,7 @@ module.exports = class Sessions {
                     session.qrcode = base64Qrimg;
                     session.CodeasciiQR = asciiQR;
                     session.CodeurlCode = urlCode;
+                    console.log("QR Code gerado:", urlCode);
                 },
                 statusFind: (statusSession, session) => {
                     console.log('- Status da sessão:', statusSession);
@@ -169,6 +109,7 @@ module.exports = class Sessions {
                 puppeteerOptions: {
                     // executablePath: '/usr/bin/chromium'
                     userDataDir: './tokens/mySessionName'
+                    
                 },
                 browserArgs: [
                     '--log-level=3',
@@ -200,6 +141,7 @@ module.exports = class Sessions {
                     '--disable-accelerated-mjpeg-decode',
                     '--disable-app-list-dismiss-on-blur',
                     '--disable-accelerated-video-decode',
+                    '--remote-debugging-port=0' // Força a usar sempre uma nova aba
                 ],
                 disableSpins: true,
                 disableWelcome: false,
@@ -320,7 +262,6 @@ module.exports = class Sessions {
     static async getQrcode(sessionName) {
         var session = Sessions.getSession(sessionName);
         if (session) {
-            //if (["UNPAIRED", "UNPAIRED_IDLE"].includes(session.state)) {
             if (["UNPAIRED_IDLE"].includes(session.state)) {
                 //restart session
                 await Sessions.closeSession(sessionName);
