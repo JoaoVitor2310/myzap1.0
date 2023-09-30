@@ -159,10 +159,12 @@ module.exports = class Sessions {
             createPathFileToken: true,
             waitForLogin: true,
 
-        }).then((client) => startClient(client)); // Coloquei isso por conta da documentação do wppconnect
+        }).then((client) => start(client)) // Peguei direto da doc do wppconnect
+        .catch((error) => console.log(error));
+
         wppconnect.defaultLogger.level = 'debug'
         session.state = "CONNECTED";
-        // console.log('client: ' + JSON.stringify(client)); Não dá para logar infelizmente
+        // console.log('client: ' + JSON.stringify(client)); Não dá pra logar infelizmente
         return client;
     }
 
