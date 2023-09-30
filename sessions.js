@@ -84,11 +84,10 @@ module.exports = class Sessions {
             } else {
                 console.log("nao tinha token na nuvem");
             }
-        }//if jsonbinio_secret_key
-        //Parte do Venom ficava aqui, tirei pq não vou usar
-        const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
+        }
+        // const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
         const client = await wppconnect.create({
-            browserWSEndpoint,
+            // browserWSEndpoint,
             session: session.name,
             catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
                 session.state = "QRCODE";
@@ -251,7 +250,7 @@ module.exports = class Sessions {
                 foundSession = session;
             }
         });
-        console.log('Tem sessão?' + foundSession);
+        console.log('Tem sessão?' + JSON.stringify(foundSession));
         return foundSession;
     } //getSession
 
