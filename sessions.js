@@ -90,10 +90,20 @@ module.exports = class Sessions {
             session: session.name,
             // browserWS,
             catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
+                console.log('ENTROU NO CATCHQR');
+                
                 session.state = "QRCODE";
+                console.log('session.state: ' + session.state);
+
                 session.qrcode = base64Qrimg;
+                console.log('session.qrcode: ' + session.qrcode);
+                
                 session.CodeasciiQR = asciiQR;
+                console.log('session.CodeasciiQR: ' + session.CodeasciiQR);
+                
                 session.CodeurlCode = urlCode;
+                console.log('session.CodeurlCode: ' + session.CodeurlCode);
+
                 console.log("QR Code gerado:", urlCode); // 
                 console.log('Attempts:' + attempts);
             },
