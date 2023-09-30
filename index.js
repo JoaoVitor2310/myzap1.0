@@ -52,7 +52,7 @@ app.get("/start", async (req, res, next) => {
     } else {
         res.status(200).json({ result: 'error', message: session.state });
     }
-});//start
+});
 
 app.get("/status", async (req, res, next) => {
     var session = await Sessions.getStatus(req.query.sessionName);
@@ -60,7 +60,7 @@ app.get("/status", async (req, res, next) => {
     res.status(200).json({
         result: (!session.state) ? 'NOT_FOUND' : session.state
     });
-}); //status
+});
 
 app.get("/qrcode", async (req, res, next) => {
     console.log("qrcode..." + req.query.sessionName);

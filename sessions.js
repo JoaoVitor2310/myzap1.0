@@ -4,33 +4,34 @@
 const os = require('os');
 const fs = require('fs');
 const path = require('path');
-const venom = require('venom-bot');
 const wppconnect = require('@wppconnect-team/wppconnect');
 const axios = require('axios');
 
 module.exports = class Sessions {
 
     static async start(sessionName, options = []) {
-        Sessions.options = Sessions.options || options; //start object
-        Sessions.sessions = Sessions.sessions || []; //start array
+        Sessions.options = Sessions.options || options; //start objecto com opções de sessão
+        Sessions.sessions = Sessions.sessions || []; //start array de sessões
 
-        var session = Sessions.getSession(sessionName);
+        var session = Sessions.getSession(sessionName); // Procura se já existe a sessão com o nome informado
 
-        if (session == false) { //create new session
-            console.log("session == false");
-            session = await Sessions.addSesssion(sessionName);
-        } else if (["CLOSED"].includes(session.state)) { //restart session
+        if (session == false) { //Se a sessão não existe, irá criar uma nova.
+            console.log("Sessão não existe, criando uma nova.");
+            session = await Sessions.addSession(sessionName);
+        } else if (["CLOSED"].includes(session.state)) { //restart session? Sessão existe mas tá fechada(inativa, sem uso)?
+            console.log('Sessão existe mas tá fechada')
             console.log("session.state == CLOSED");
             session.state = "STARTING";
             session.status = 'notLogged';
             session.client = Sessions.initSession(sessionName);
             Sessions.setup(sessionName);
-        } else if (["CONFLICT", "UNPAIRED", "UNLAUNCHED"].includes(session.state)) {
+        } else if (["CONFLICT", "UNPAIRED", "UNLAUNCHED"].includes(session.state)) { // Sessão existe mas está em conflito ou não pareada
             console.log("client.useHere()");
             session.client.then(client => {
                 client.useHere();
             });
-        } else {
+        } else { 
+            console.log('CASO INESPERADO!')
             console.log("session.state: " + session.state);
         }
         return session;
@@ -38,14 +39,14 @@ module.exports = class Sessions {
 
     static async getStatus(sessionName, options = []) {
         Sessions.options = Sessions.options || options;
-        Sessions.sessions = Sessions.sessions || [];
+        Sessions.sessions = Sessions.sessions || []; 
 
         var session = Sessions.getSession(sessionName);
         return session;
     } //getStatus
 
-    static async addSesssion(sessionName) {
-        var newSession = {
+    static async addSession(sessionName) {
+        var newSession = { // Cria um objeto com os dados da nova sessão
             name: sessionName,
             hook: null,
             qrcode: false,
@@ -53,19 +54,20 @@ module.exports = class Sessions {
             status: 'notLogged',
             state: 'STARTING'
         }
-        Sessions.sessions.push(newSession);
+        Sessions.sessions.push(newSession); // Adiciona no array de sessões os dados da sessão que tá criando.
+        console.log("Nova Sessão criada: " + newSession.name);
         console.log("newSession.state: " + newSession.state);
 
         //setup session
-        newSession.client = Sessions.initSession(sessionName);
+        newSession.client = Sessions.initSession(sessionName); // Inicia a sessão no wppconnect
         Sessions.setup(sessionName);
 
         return newSession;
     } //addSession
 
     static async initSession(sessionName) {
-        var session = Sessions.getSession(sessionName);
-        session.browserSessionToken = null;
+        var session = Sessions.getSession(sessionName); // Procura se já existe essa sessão, dessa vez vai achar
+        session.browserSessionToken = null; // Coloca o browserSessionToken como null
         if (Sessions.options.jsonbinio_secret_key !== undefined) {//se informou secret key pra salvar na nuvem
             //busca token da session na nuvem
             var config = {
@@ -84,82 +86,82 @@ module.exports = class Sessions {
             }
         }//if jsonbinio_secret_key
         //Parte do Venom ficava aqui, tirei pq não vou usar
-        if (process.env.ENGINE === 'WPPCONNECT') {
-            const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
-            const client = await wppconnect.create({
-                browserWSEndpoint,
-                session: session.name,
-                catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
-                    session.state = "QRCODE";
-                    session.qrcode = base64Qrimg;
-                    session.CodeasciiQR = asciiQR;
-                    session.CodeurlCode = urlCode;
-                    console.log("QR Code gerado:", urlCode);
-                },
-                statusFind: (statusSession, session) => {
-                    console.log('- Status da sessão:', statusSession);
-                    console.log('- Session name: ', session);
-                },
-                folderNameToken: 'tokens',
-                headless: true, // new pq o puppeter mandou warning
-                devtools: false,
-                useChrome: true, // True para usar o chrome ao inves de chromium
-                debug: false,
-                logQR: true,
-                puppeteerOptions: {
-                    // executablePath: '/usr/bin/chromium'
-                    userDataDir: './tokens/mySessionName'
-                    
-                },
-                browserArgs: [
-                    '--log-level=3',
-                    '--no-default-browser-check',
-                    '--disable-site-isolation-trials',
-                    '--no-experiments',
-                    '--ignore-gpu-blacklist',
-                    '--ignore-certificate-errors',
-                    '--ignore-certificate-errors-spki-list',
-                    '--disable-gpu',
-                    '--disable-extensions',
-                    '--disable-default-apps',
-                    '--enable-features=NetworkService',
-                    '--disable-setuid-sandbox',
-                    '--no-sandbox',
-                    '--user-data-dir', // tentativa para iniciar mais de 1 sessão
-                    // Extras
-                    '--disable-webgl',
-                    '--disable-threaded-animation',
-                    '--disable-threaded-scrolling',
-                    '--disable-in-process-stack-traces',
-                    '--disable-histogram-customizer',
-                    '--disable-gl-extensions',
-                    '--disable-composited-antialiasing',
-                    '--disable-canvas-aa',
-                    '--disable-3d-apis',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-accelerated-jpeg-decoding',
-                    '--disable-accelerated-mjpeg-decode',
-                    '--disable-app-list-dismiss-on-blur',
-                    '--disable-accelerated-video-decode',
-                    '--remote-debugging-port=0' // Força a usar sempre uma nova aba
-                ],
-                disableSpins: true,
-                disableWelcome: false,
-                updatesLog: true,
-                autoClose: 60000,
-                createPathFileToken: true,
-                waitForLogin: true,
+        const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
+        const client = await wppconnect.create({
+            browserWSEndpoint,
+            session: session.name,
+            catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
+                session.state = "QRCODE";
+                session.qrcode = base64Qrimg;
+                session.CodeasciiQR = asciiQR;
+                session.CodeurlCode = urlCode;
+                console.log("QR Code gerado:", urlCode); // 
+                console.log('Attempts:' + attempts);
+            },
+            statusFind: (statusSession, session) => {
+                console.log('- Status da sessão:', statusSession);
+                console.log('- Session name: ', session);
+            },
+            folderNameToken: 'tokens',
+            debug: true,
+            browserWS: true,
+            headless: true, // new pq o puppeter mandou warning
+            devtools: false,
+            useChrome: true, // True para usar o chrome ao inves de chromium
+            logQR: true,
+            puppeteerOptions: {
+                // executablePath: '/usr/bin/chromium'
+                userDataDir: './tokens/mySessionName'
+            },
+            browserArgs: [
+                '--log-level=3',
+                '--no-default-browser-check',
+                '--disable-site-isolation-trials',
+                '--no-experiments',
+                '--ignore-gpu-blacklist',
+                '--ignore-certificate-errors',
+                '--ignore-certificate-errors-spki-list',
+                '--disable-gpu',
+                '--disable-extensions',
+                '--disable-default-apps',
+                '--enable-features=NetworkService',
+                '--disable-setuid-sandbox',
+                '--no-sandbox',
+                '--user-data-dir', // tentativa para iniciar mais de 1 sessão
+                // Extras
+                '--disable-webgl',
+                '--disable-threaded-animation',
+                '--disable-threaded-scrolling',
+                '--disable-in-process-stack-traces',
+                '--disable-histogram-customizer',
+                '--disable-gl-extensions',
+                '--disable-composited-antialiasing',
+                '--disable-canvas-aa',
+                '--disable-3d-apis',
+                '--disable-accelerated-2d-canvas',
+                '--disable-accelerated-jpeg-decoding',
+                '--disable-accelerated-mjpeg-decode',
+                '--disable-app-list-dismiss-on-blur',
+                '--disable-accelerated-video-decode',
+                // '--remote-debugging-port=0' // Força a usar sempre uma nova aba
+            ],
+            disableSpins: true,
+            disableWelcome: true,
+            updatesLog: true,
+            autoClose: 60000,
+            createPathFileToken: true,
+            waitForLogin: true,
 
-            });
-            wppconnect.defaultLogger.level = 'debug'
-            session.state = "CONNECTED";
-            return client;
-        }
+        });
+        wppconnect.defaultLogger.level = 'debug'
+        session.state = "CONNECTED";
+        return client;
     }
-    static async setup(sessionName) {
-        var session = Sessions.getSession(sessionName);
 
-        await session.client.then(client => {
+    static async setup(sessionName) { // Classe que vai deixar a sessão aberta para funcionar o wpp
+        var session = Sessions.getSession(sessionName); // Confere se a sessão já existe, nesse caso tem que existir
+
+        await session.client.then(client => { // Fica de olho no socket
             client.onStateChange(state => {
                 session.state = state;
                 if (state == "CONNECTED") {
@@ -187,11 +189,11 @@ module.exports = class Sessions {
                                     console.log(error);
                                 });
                         }, 2000);
-                    }//if jsonbinio_secret_key
-                }//if CONNECTED
-                console.log("session.state: " + state);
+                    }
+                }
+                console.log("Session.state: " + state);
             }); //.then((client) => Sessions.startProcess(client));
-            client.onMessage(async (message) => {
+            client.onMessage(async (message) => { // De olho em mensagens e ações
                 var session = Sessions.getSession(sessionName);
                 if (session.hook != null) {
                     var config = {
@@ -241,13 +243,15 @@ module.exports = class Sessions {
     } //close
 
     static getSession(sessionName) {
+        console.log('Procurando por Sessão!');
         var foundSession = false;
-        if (Sessions.sessions)
-            Sessions.sessions.forEach(session => {
-                if (sessionName == session.name) {
-                    foundSession = session;
-                }
-            });
+        if (Sessions.sessions) // Na primeira vez, vem com o array vazio então não entra
+        Sessions.sessions.forEach(session => {
+            if (sessionName == session.name) {
+                foundSession = session;
+            }
+        });
+        console.log('Tem sessão?' + foundSession);
         return foundSession;
     } //getSession
 
