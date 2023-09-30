@@ -85,10 +85,10 @@ module.exports = class Sessions {
                 console.log("nao tinha token na nuvem");
             }
         }
-        // const browserWSEndpoint = 'ws://62.72.11.236:3333'; // Url da vps gestor master
+        const browserWSEndpoint = 'wss://62.72.11.236:3333'; // Url da vps gestor master
         const client = await wppconnect.create({
-            // browserWSEndpoint,
             session: session.name,
+            browserWSEndpoint,
             catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
                 session.state = "QRCODE";
                 session.qrcode = base64Qrimg;
@@ -242,7 +242,6 @@ module.exports = class Sessions {
     } //close
 
     static getSession(sessionName) {
-        console.log('Procurando por Sessão!');
         var foundSession = false;
         if (Sessions.sessions) // Na primeira vez, vem com o array vazio então não entra
         Sessions.sessions.forEach(session => {
@@ -250,7 +249,7 @@ module.exports = class Sessions {
                 foundSession = session;
             }
         });
-        console.log('Tem sessão?' + JSON.stringify(foundSession));
+        // console.log('Tem sessão?' + JSON.stringify(foundSession));
         return foundSession;
     } //getSession
 
