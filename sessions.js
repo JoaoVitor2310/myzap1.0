@@ -6,6 +6,7 @@ const fs = require('fs');
 const path = require('path');
 const wppconnect = require('@wppconnect-team/wppconnect');
 const axios = require('axios');
+const venom = require('venom-bot');
 
 module.exports = class Sessions {
 
@@ -16,7 +17,6 @@ module.exports = class Sessions {
         var session = Sessions.getSession(sessionName); // Procura se já existe a sessão com o nome informado
 
         if (session == false) { //Se a sessão não existe, irá criar uma nova.
-            console.log("Sessão não existe, criando uma nova.");
             session = await Sessions.addSession(sessionName);
         } else if (["CLOSED"].includes(session.state)) { //restart session? Sessão existe mas tá fechada(inativa, sem uso)?
             console.log("session.state == CLOSED");
@@ -25,13 +25,11 @@ module.exports = class Sessions {
             session.client = Sessions.initSession(sessionName);
             Sessions.setup(sessionName);
         } else if (["CONFLICT", "UNPAIRED", "UNLAUNCHED"].includes(session.state)) { // Sessão existe mas agr vai gerar o QRCODE PARA INICIÁ-LA
-            console.log('SEGUNDA SESSÃO?');
             console.log("client.useHere()");
             session.client.then(client => {
                 client.useHere();
             });
-        } else { 
-            console.log('CASO INESPERADO!')
+        } else {
             console.log("session.state: " + session.state);
         }
         return session;
@@ -39,7 +37,7 @@ module.exports = class Sessions {
 
     static async getStatus(sessionName, options = []) {
         Sessions.options = Sessions.options || options;
-        Sessions.sessions = Sessions.sessions || []; 
+        Sessions.sessions = Sessions.sessions || [];
 
         var session = Sessions.getSession(sessionName);
         return session;
@@ -55,10 +53,9 @@ module.exports = class Sessions {
             state: 'STARTING'
         }
         Sessions.sessions.push(newSession); // Adiciona no array de sessões os dados da sessão que tá criando.
-        console.log("Nova Sessão criada: " + newSession.name);
         console.log("newSession.state: " + newSession.state);
 
-        
+
         newSession.client = Sessions.initSession(sessionName); // Inicia a sessão no wppconnect
         Sessions.setup(sessionName);
 
@@ -67,7 +64,6 @@ module.exports = class Sessions {
 
     static async initSession(sessionName) {
         var session = Sessions.getSession(sessionName); // Procura se já existe essa sessão, dessa vez vai achar
-        console.log('sessão a ser iniciada: '+ session.name);
         session.browserSessionToken = null; // Coloca o browserSessionToken como null
         if (Sessions.options.jsonbinio_secret_key !== undefined) {//se informou secret key pra salvar na nuvem
             //busca token da session na nuvem
@@ -86,87 +82,140 @@ module.exports = class Sessions {
                 console.log("nao tinha token na nuvem");
             }
         }
-        // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
-        console.log('VAI CRIAR O CLIENT AGORA');
-        const client = await wppconnect.create({
-            session: session.name,
-            
-            catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => {
-                console.log('ENTROU NO CATCHQR');
-                
-                session.state = "QRCODE";
-                console.log('session.state: ' + session.state);
-                
-                session.qrcode = base64Qrimg; // O qrcode de fato, n precisa logar
-                
-                session.CodeasciiQR = asciiQR;
-                console.log('session.CodeasciiQR: ' + session.CodeasciiQR);
-                
-                session.CodeurlCode = urlCode;
-                console.log('session.CodeurlCode: ' + session.CodeurlCode);
-                
-                console.log("QR Code gerado:", urlCode); // 
-                console.log('Attempts:' + attempts);
+        if (process.env.ENGINE === 'VENOM') {
+            const client = await venom.create(
+                sessionName,
+                (base64Qr, asciiQR, attempts) => {
+                    session.state = "QRCODE";
+                    session.qrcode = base64Qr;
+                },
+                // statusFind
+                (statusSession, session) => {
+                    console.log('#### status=' + statusSession + ' sessionName=' + session);
+                }, {
+                folderNameToken: 'tokens',
+                headless: false,
+                devtools: false,
+                useChrome: false,
+                debug: false,
+                logQR: true,
+                browserArgs: [
+                    '--log-level=3',
+                    '--no-default-browser-check',
+                    '--disable-site-isolation-trials',
+                    '--no-experiments',
+                    '--ignore-gpu-blacklist',
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list',
+                    '--disable-gpu',
+                    '--disable-extensions',
+                    '--disable-default-apps',
+                    '--enable-features=NetworkService',
+                    '--disable-setuid-sandbox',
+                    '--no-sandbox',
+                    // Extras
+                    '--disable-webgl',
+                    '--disable-threaded-animation',
+                    '--disable-threaded-scrolling',
+                    '--disable-in-process-stack-traces',
+                    '--disable-histogram-customizer',
+                    '--disable-gl-extensions',
+                    '--disable-composited-antialiasing',
+                    '--disable-canvas-aa',
+                    '--disable-3d-apis',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-accelerated-jpeg-decoding',
+                    '--disable-accelerated-mjpeg-decode',
+                    '--disable-app-list-dismiss-on-blur',
+                    '--disable-accelerated-video-decode',
+                ],
+                refreshQR: 15000,
+                autoClose: 60000,
+                disableSpins: true,
+                disableWelcome: false,
+                createPathFileToken: true,
+                waitForLogin: true
             },
-            statusFind: (statusSession, session) => {
-                console.log('- Status da sessão:', statusSession);
-                console.log('- Session name: ', session);
-            },
-            folderNameToken: 'tokens',
-            debug: true,
-            headless: true, // new pq o puppeter mandou warning
-            devtools: false,
-            useChrome: true, // True para usar o chrome ao inves de chromium
-            logQR: true,
-            puppeteerOptions: {
-                // executablePath: '/usr/bin/chromium'
-                userDataDir: './tokens/mySessionName'
-            },
-            browserArgs: [
-                '--log-level=3',
-                '--no-default-browser-check',
-                '--disable-site-isolation-trials',
-                '--no-experiments',
-                '--ignore-gpu-blacklist',
-                '--ignore-certificate-errors',
-                '--ignore-certificate-errors-spki-list',
-                '--disable-gpu',
-                '--disable-extensions',
-                '--disable-default-apps',
-                '--enable-features=NetworkService',
-                '--disable-setuid-sandbox',
-                '--no-sandbox',
-                '--user-data-dir', // tentativa para iniciar mais de 1 sessão
-                // Extras
-                '--disable-webgl',
-                '--disable-threaded-animation',
-                '--disable-threaded-scrolling',
-                '--disable-in-process-stack-traces',
-                '--disable-histogram-customizer',
-                '--disable-gl-extensions',
-                '--disable-composited-antialiasing',
-                '--disable-canvas-aa',
-                '--disable-3d-apis',
-                '--disable-accelerated-2d-canvas',
-                '--disable-accelerated-jpeg-decoding',
-                '--disable-accelerated-mjpeg-decode',
-                '--disable-app-list-dismiss-on-blur',
-                '--disable-accelerated-video-decode',
-                // '--remote-debugging-port=0' // Força a usar sempre uma nova aba
-            ],
-            disableSpins: true,
-            disableWelcome: true,
-            updatesLog: true,
-            autoClose: 60000,
-            createPathFileToken: true,
-            waitForLogin: true,
+                session.browserSessionToken
+            );
+            var browserSessionToken = await client.getSessionTokenBrowser();
+            console.log("usou isso no create: " + JSON.stringify(browserSessionToken));
+            session.state = "CONNECTED";
+            return client;
+        } else {
+            // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
+            const client = await wppconnect.create({
+                session: session.name,
 
-        })
-        console.log('CLIENT CRIADO?');
-        wppconnect.defaultLogger.level = 'debug'
-        session.state = "CONNECTED";
-        // console.log('client: ' + JSON.stringify(client)); Não dá pra logar infelizmente
-        return client;
+                catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => { // Descobrir pq não inicia o catchQR na segunda sessão
+
+                    session.state = "QRCODE";
+                    console.log('session.state: ' + session.state);
+
+                    session.qrcode = base64Qrimg; // N precisa logar esses 2
+                    session.CodeasciiQR = asciiQR;
+
+                    session.CodeurlCode = urlCode;
+                    console.log('session.CodeurlCode: ' + session.CodeurlCode);
+
+                    console.log("QR Code gerado:", urlCode);
+                },
+                statusFind: (statusSession, session) => {
+                    console.log('- Status da sessão:', statusSession);
+                    console.log('- Session name: ', session);
+                },
+                folderNameToken: 'tokens',
+                debug: true,
+                headless: true,
+                devtools: false,
+                useChrome: false, // True para usar o chrome ao inves de chromium
+                logQR: true,
+                puppeteerOptions: {
+                    debuggingPort: 0,
+                },
+                browserArgs: [
+                    '--log-level=3',
+                    '--no-default-browser-check',
+                    '--disable-site-isolation-trials',
+                    '--no-experiments',
+                    '--ignore-gpu-blacklist',
+                    '--ignore-certificate-errors',
+                    '--ignore-certificate-errors-spki-list',
+                    '--disable-gpu',
+                    '--disable-extensions',
+                    '--disable-default-apps',
+                    '--enable-features=NetworkService',
+                    '--disable-setuid-sandbox',
+                    '--no-sandbox',
+                    // Extras
+                    '--disable-webgl',
+                    '--disable-threaded-animation',
+                    '--disable-threaded-scrolling',
+                    '--disable-in-process-stack-traces',
+                    '--disable-histogram-customizer',
+                    '--disable-gl-extensions',
+                    '--disable-composited-antialiasing',
+                    '--disable-canvas-aa',
+                    '--disable-3d-apis',
+                    '--disable-accelerated-2d-canvas',
+                    '--disable-accelerated-jpeg-decoding',
+                    '--disable-accelerated-mjpeg-decode',
+                    '--disable-app-list-dismiss-on-blur',
+                    '--disable-accelerated-video-decode',
+                    '--remote-debugging-port=0' // Força a usar sempre uma nova janela
+                ],
+                disableSpins: true,
+                disableWelcome: true,
+                updatesLog: true,
+                autoClose: 60000,
+                createPathFileToken: true,
+                waitForLogin: true,
+
+            })
+            wppconnect.defaultLogger.level = 'debug'
+            session.state = "CONNECTED";
+            return client;
+        }
     }
 
     static async setup(sessionName) { // Classe que vai deixar a sessão aberta para funcionar o wpp
@@ -256,12 +305,11 @@ module.exports = class Sessions {
     static getSession(sessionName) {
         var foundSession = false;
         if (Sessions.sessions) // Na primeira vez, vem com o array vazio então não entra
-        Sessions.sessions.forEach(session => {
-            if (sessionName == session.name) {
-                foundSession = session;
-            }
-        });
-        // console.log('Tem sessão?' + JSON.stringify(foundSession));
+            Sessions.sessions.forEach(session => {
+                if (sessionName == session.name) {
+                    foundSession = session;
+                }
+            });
         return foundSession;
     } //getSession
 
