@@ -6,19 +6,18 @@ const fs = require('fs');
 const path = require('path');
 const wppconnect = require('@wppconnect-team/wppconnect');
 const axios = require('axios');
-const venom = require('venom-bot');
 
 module.exports = class Sessions {
 
     static async start(sessionName, options = []) {
-        Sessions.options = Sessions.options || options; //start objecto com opções de sessão
+        Sessions.options = Sessions.options || options; //start object com opções de sessão
         Sessions.sessions = Sessions.sessions || []; //start array de sessões
 
         var session = Sessions.getSession(sessionName); // Procura se já existe a sessão com o nome informado
 
         if (session == false) { //Se a sessão não existe, irá criar uma nova.
             session = await Sessions.addSession(sessionName);
-        } else if (["CLOSED"].includes(session.state)) { //restart session? Sessão existe mas tá fechada(inativa, sem uso)?
+        } else if (["CLOSED"].includes(session.state)) { //Restart session, Sessão existe mas tá fechada(inativa, sem uso)
             console.log("session.state == CLOSED");
             session.state = "STARTING";
             session.status = 'notLogged';
@@ -82,140 +81,79 @@ module.exports = class Sessions {
                 console.log("nao tinha token na nuvem");
             }
         }
-        if (process.env.ENGINE === 'VENOM') {
-            const client = await venom.create(
-                sessionName,
-                (base64Qr, asciiQR, attempts) => {
-                    session.state = "QRCODE";
-                    session.qrcode = base64Qr;
-                },
-                // statusFind
-                (statusSession, session) => {
-                    console.log('#### status=' + statusSession + ' sessionName=' + session);
-                }, {
-                folderNameToken: 'tokens',
-                headless: false,
-                devtools: false,
-                useChrome: false,
-                debug: false,
-                logQR: true,
-                browserArgs: [
-                    '--log-level=3',
-                    '--no-default-browser-check',
-                    '--disable-site-isolation-trials',
-                    '--no-experiments',
-                    '--ignore-gpu-blacklist',
-                    '--ignore-certificate-errors',
-                    '--ignore-certificate-errors-spki-list',
-                    '--disable-gpu',
-                    '--disable-extensions',
-                    '--disable-default-apps',
-                    '--enable-features=NetworkService',
-                    '--disable-setuid-sandbox',
-                    '--no-sandbox',
-                    // Extras
-                    '--disable-webgl',
-                    '--disable-threaded-animation',
-                    '--disable-threaded-scrolling',
-                    '--disable-in-process-stack-traces',
-                    '--disable-histogram-customizer',
-                    '--disable-gl-extensions',
-                    '--disable-composited-antialiasing',
-                    '--disable-canvas-aa',
-                    '--disable-3d-apis',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-accelerated-jpeg-decoding',
-                    '--disable-accelerated-mjpeg-decode',
-                    '--disable-app-list-dismiss-on-blur',
-                    '--disable-accelerated-video-decode',
-                ],
-                refreshQR: 15000,
-                autoClose: 60000,
-                disableSpins: true,
-                disableWelcome: false,
-                createPathFileToken: true,
-                waitForLogin: true
+
+        // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
+        const client = await wppconnect.create({
+            session: session.name,
+
+            catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => { // Descobrir pq não inicia o catchQR na segunda sessão
+
+                session.state = "QRCODE";
+                console.log('session.state: ' + session.state);
+
+                session.qrcode = base64Qrimg; // N precisa logar esses 2
+                session.CodeasciiQR = asciiQR;
+
+                session.CodeurlCode = urlCode;
+                console.log('session.CodeurlCode: ' + session.CodeurlCode);
+
+                console.log("QR Code gerado:", urlCode);
             },
-                session.browserSessionToken
-            );
-            var browserSessionToken = await client.getSessionTokenBrowser();
-            console.log("usou isso no create: " + JSON.stringify(browserSessionToken));
-            session.state = "CONNECTED";
-            return client;
-        } else {
-            // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
-            const client = await wppconnect.create({
-                session: session.name,
+            statusFind: (statusSession, session) => {
+                console.log('- Status da sessão:', statusSession);
+                console.log('- Session name: ', session);
+            },
+            folderNameToken: 'tokens',
+            debug: true,
+            headless: true,
+            devtools: false,
+            useChrome: false, // True para usar o chrome ao inves de chromium
+            logQR: true,
+            puppeteerOptions: {
+                debuggingPort: 0,
+            },
+            browserArgs: [
+                '--log-level=3',
+                '--no-default-browser-check',
+                '--disable-site-isolation-trials',
+                '--no-experiments',
+                '--ignore-gpu-blacklist',
+                '--ignore-certificate-errors',
+                '--ignore-certificate-errors-spki-list',
+                '--disable-gpu',
+                '--disable-extensions',
+                '--disable-default-apps',
+                '--enable-features=NetworkService',
+                '--disable-setuid-sandbox',
+                '--no-sandbox',
+                // Extras
+                '--disable-webgl',
+                '--disable-threaded-animation',
+                '--disable-threaded-scrolling',
+                '--disable-in-process-stack-traces',
+                '--disable-histogram-customizer',
+                '--disable-gl-extensions',
+                '--disable-composited-antialiasing',
+                '--disable-canvas-aa',
+                '--disable-3d-apis',
+                '--disable-accelerated-2d-canvas',
+                '--disable-accelerated-jpeg-decoding',
+                '--disable-accelerated-mjpeg-decode',
+                '--disable-app-list-dismiss-on-blur',
+                '--disable-accelerated-video-decode',
+                '--remote-debugging-port=0' // Força a usar sempre uma nova janela
+            ],
+            disableSpins: true,
+            disableWelcome: true,
+            updatesLog: true,
+            autoClose: 60000,
+            createPathFileToken: true,
+            waitForLogin: true,
 
-                catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => { // Descobrir pq não inicia o catchQR na segunda sessão
-
-                    session.state = "QRCODE";
-                    console.log('session.state: ' + session.state);
-
-                    session.qrcode = base64Qrimg; // N precisa logar esses 2
-                    session.CodeasciiQR = asciiQR;
-
-                    session.CodeurlCode = urlCode;
-                    console.log('session.CodeurlCode: ' + session.CodeurlCode);
-
-                    console.log("QR Code gerado:", urlCode);
-                },
-                statusFind: (statusSession, session) => {
-                    console.log('- Status da sessão:', statusSession);
-                    console.log('- Session name: ', session);
-                },
-                folderNameToken: 'tokens',
-                debug: true,
-                headless: true,
-                devtools: false,
-                useChrome: false, // True para usar o chrome ao inves de chromium
-                logQR: true,
-                puppeteerOptions: {
-                    debuggingPort: 0,
-                },
-                browserArgs: [
-                    '--log-level=3',
-                    '--no-default-browser-check',
-                    '--disable-site-isolation-trials',
-                    '--no-experiments',
-                    '--ignore-gpu-blacklist',
-                    '--ignore-certificate-errors',
-                    '--ignore-certificate-errors-spki-list',
-                    '--disable-gpu',
-                    '--disable-extensions',
-                    '--disable-default-apps',
-                    '--enable-features=NetworkService',
-                    '--disable-setuid-sandbox',
-                    '--no-sandbox',
-                    // Extras
-                    '--disable-webgl',
-                    '--disable-threaded-animation',
-                    '--disable-threaded-scrolling',
-                    '--disable-in-process-stack-traces',
-                    '--disable-histogram-customizer',
-                    '--disable-gl-extensions',
-                    '--disable-composited-antialiasing',
-                    '--disable-canvas-aa',
-                    '--disable-3d-apis',
-                    '--disable-accelerated-2d-canvas',
-                    '--disable-accelerated-jpeg-decoding',
-                    '--disable-accelerated-mjpeg-decode',
-                    '--disable-app-list-dismiss-on-blur',
-                    '--disable-accelerated-video-decode',
-                    '--remote-debugging-port=0' // Força a usar sempre uma nova janela
-                ],
-                disableSpins: true,
-                disableWelcome: true,
-                updatesLog: true,
-                autoClose: 60000,
-                createPathFileToken: true,
-                waitForLogin: true,
-
-            })
-            wppconnect.defaultLogger.level = 'debug'
-            session.state = "CONNECTED";
-            return client;
-        }
+        })
+        wppconnect.defaultLogger.level = 'debug'
+        session.state = "CONNECTED";
+        return client;
     }
 
     static async setup(sessionName) { // Classe que vai deixar a sessão aberta para funcionar o wpp
