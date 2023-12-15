@@ -104,11 +104,11 @@ module.exports = class Sessions {
                 console.log('- Session name: ', session);
             },
             folderNameToken: 'tokens',
-            debug: true,
-            headless: true,
+            debug: false,
+            headless: false,
             devtools: false,
             useChrome: false, // True para usar o chrome ao inves de chromium
-            logQR: true,
+            logQR: false,
             puppeteerOptions: {
                 debuggingPort: 0,
             },
@@ -141,7 +141,26 @@ module.exports = class Sessions {
                 '--disable-accelerated-mjpeg-decode',
                 '--disable-app-list-dismiss-on-blur',
                 '--disable-accelerated-video-decode',
-                '--remote-debugging-port=0' // Força a usar sempre uma nova janela
+                '--remote-debugging-port=0', // Força a usar sempre uma nova janela
+                '--disable-dev-shm-usage', // A partir daqui é pra tentar consumir menos recursos da VPS
+                '--no-first-run',
+                '--no-zygote',
+                '--single-process',
+                '--disable-web-security', // pode causar possível erro no funcionamento
+                '--disable-cache',
+                '--disable-application-cache',
+                '--disable-offline-load-stale-cache',
+                '--disk-cache-size=0',
+                '--disable-background-networking', // pode causar possível erro no funcionamento
+                '--disable-sync', // pode causar possível erro no funcionamento
+                '--disable-translate',
+                '--hide-scrollbars',
+                '--metrics-recording-only',
+                '--mute-audio',
+                '--safebrowsing-disable-auto-update',
+                '--ignore-ssl-errors', // pode causar possível erro no funcionamento
+                '--noerrdialogs',
+                '--disable-features=NetworkService,IsolateOrigins,site-per-process'
             ],
             disableSpins: true,
             disableWelcome: true,
