@@ -105,7 +105,7 @@ module.exports = class Sessions {
             },
             folderNameToken: 'tokens',
             debug: false,
-            headless: false,
+            headless: true,
             devtools: false,
             useChrome: false, // True para usar o chrome ao inves de chromium
             logQR: false,
