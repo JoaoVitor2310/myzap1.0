@@ -82,16 +82,15 @@ module.exports = class Sessions {
             }
         }
 
-        // const browserWS = 'wss://62.72.11.236:3333'; // Url da vps gestor master
         const client = await wppconnect.create({
             session: session.name,
 
-            catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => { // Descobrir pq não inicia o catchQR na segunda sessão
+            catchQR: (base64Qrimg, asciiQR, attempts, urlCode) => { // Não iniciava quando tinha o bug de só iniciar uma sessão
 
                 session.state = "QRCODE";
                 console.log('session.state: ' + session.state);
 
-                session.qrcode = base64Qrimg; // N precisa logar esses 2
+                session.qrcode = base64Qrimg; // N precisa logar no console esses 2
                 session.CodeasciiQR = asciiQR;
 
                 session.CodeurlCode = urlCode;
@@ -109,6 +108,7 @@ module.exports = class Sessions {
             devtools: false,
             useChrome: false, // True para usar o chrome ao inves de chromium
             logQR: false,
+            whatsappVersion: null, // Utiliza a versão mais recente do wpp
             puppeteerOptions: {
                 debuggingPort: 0,
             },
