@@ -19,7 +19,7 @@ Este projeto usa como base o [Venom-bot](https://github.com/orkestral/venom) ou 
 `sudo apt install -y git nodejs`
 - para instalar git, nodejs
 
-`git clone https://github.com/billbarsch/myzap.git`
+`git clone https://github.com/JoaoVitor2310/myzap1.0`
 
 `cd myzap`
 
@@ -40,7 +40,7 @@ ENGINE=WPPCONNECT
 
 ### keep processes alive at every server restart
 
-`npm install -y pm2 -g`
+`sudo npm install -y pm2`
 
 `pm2 start index.js`
 

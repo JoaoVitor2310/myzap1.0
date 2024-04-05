@@ -7,6 +7,12 @@ const cors = require('cors');
 const Sessions = require("./sessions");
 require('dotenv').config();
 
+// JSONBINIO_BIN_ID=65fa2de4266cfc3fde9ae540
+
+// JSONBINIO_MASTER_KEY=$2a$10$EC9H06YZxAI7lCPCU8UFjOWnoSmhIvpTWDX4YGxvzpYkJVCpJ4tQC
+
+// JSONBINIO_ACCESS_KEY=$2a$10$9IqChkew1xpcBoN1loAyUerm.2R/rueaAdb9OTOTe/xwUF6ADsOMC
+
 var app = express();
 
 app.use(cors());
@@ -44,8 +50,8 @@ app.post('/exec', async (req, res) => {
 
 app.get("/start", async (req, res, next) => {
     console.log("starting..." + req.query.sessionName);
-    var session = process.env.JSONBINIO_SECRET_KEY ?
-        await Sessions.start(req.query.sessionName, { jsonbinio_secret_key: process.env.JSONBINIO_SECRET_KEY, jsonbinio_bin_id: process.env.JSONBINIO_BIN_ID }) :
+    var session = process.env.JSONBINIO_MASTER_KEY ?
+        await Sessions.start(req.query.sessionName, { jsonbinio_master_key: process.env.JSONBINIO_MASTER_KEY, jsonbinio_bin_id: process.env.JSONBINIO_BIN_ID, jsonbinio_access_key: process.env.JSONBINIO_ACCESS_KEY }) :
         await Sessions.start(req.query.sessionName);
     if (["CONNECTED", "QRCODE", "STARTING"].includes(session.state)) {
         res.status(200).json({ result: 'success', message: session.state });
@@ -192,26 +198,27 @@ app.get("/getNumberProfile", async (req, res, next) => {
 
 app.get("/close", async (req, res, next) => {
     if (typeof(Sessions.options) != "undefined")  {
-        if (Sessions.options.jsonbinio_secret_key !== undefined) {//se informou secret key pra salvar na nuvem
-            console.log("limpando token na nuvem...");
+        if (Sessions.options.jsonbinio_master_key !== undefined) {//se informou secret key pra salvar na nuvem
+            console.log("--------limpando token na nuvem...");
             //salva dados do token da sessão na nuvem
             var data = JSON.stringify({ "nada": "nada" });
             var config = {
                 method: 'put',
-                url: 'https://api.jsonbin.io/b/' + Sessions.options.jsonbinio_bin_id,
+                url: 'https://api.jsonbin.io/v3/b/' + Sessions.options.jsonbinio_bin_id,
                 headers: {
                     'Content-Type': 'application/json',
-                    'secret-key': Sessions.options.jsonbinio_secret_key,
+                    'X-Master-Key': Sessions.options.jsonbinio_master_key,
+                    'X-Access-Key': Sessions.options.jsonbinio_access_key,
                     'versioning': 'false'
                 },
                 data: data
             };
             await axios(config)
                 .then(function (response) {
-                    console.log(JSON.stringify(response.data));
+                    console.log("--------" + JSON.stringify(response.data));
                 })
                 .catch(function (error) {
-                    console.log(error);
+                    console.log("--------" + error);
                 });
         }
     }
