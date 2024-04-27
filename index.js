@@ -7,11 +7,7 @@ const cors = require('cors');
 const Sessions = require("./sessions");
 require('dotenv').config();
 
-// JSONBINIO_BIN_ID=65fa2de4266cfc3fde9ae540
 
-// JSONBINIO_MASTER_KEY=$2a$10$EC9H06YZxAI7lCPCU8UFjOWnoSmhIvpTWDX4YGxvzpYkJVCpJ4tQC
-
-// JSONBINIO_ACCESS_KEY=$2a$10$9IqChkew1xpcBoN1loAyUerm.2R/rueaAdb9OTOTe/xwUF6ADsOMC
 
 var app = express();
 

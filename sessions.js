@@ -63,8 +63,8 @@ module.exports = class Sessions {
 
     static async initSession(sessionName) {
         var session = Sessions.getSession(sessionName); // Procura se já existe essa sessão, dessa vez vai achar
-        session.browserSessionToken = null; // Coloca o browserSessionToken como null
-        if (Sessions.options.jsonbinio_secret_key !== undefined) {//se informou secret key pra salvar na nuvem
+        session.browserSessionToken = null; // Coloca o browserSessionToken como null, será usado no json bin
+        if (Sessions.options.jsonbinio_master_key) {//se informou secret key pra salvar na nuvem
             //busca token da session na nuvem
             var config = {
                 method: 'get',
@@ -75,8 +75,10 @@ module.exports = class Sessions {
                 }
             };
             const response = await axios(config);
-            if (response.data.WAToken1 !== undefined) {
-                session.browserSessionToken = response.data;
+            console.log("--------resposta do axios para initSession: " + JSON.stringify(response.data));
+            // if (response.data.WAToken1 !== undefined) {
+            if (response.data.WAToken1) {
+                session.browserSessionToken = response.data.record;
                 console.log("--------puxou isso: " + JSON.stringify(session.browserSessionToken));
             } else {
                 console.log("--------nao tinha token na nuvem");
@@ -106,11 +108,12 @@ module.exports = class Sessions {
                 console.log('- Session name: ', session);
             },
             folderNameToken: 'tokens',
+            
             debug: true,
             headless: true,
             devtools: false,
             useChrome: false, // True para usar o chrome ao inves de chromium
-            logQR: true,
+            logQR: true, // Exibe o qr code no console
             // whatsappVersion: null, // Utiliza a versão mais recente do wpp
             puppeteerOptions: {
                 debuggingPort: 0,
@@ -171,7 +174,6 @@ module.exports = class Sessions {
             autoClose: 60000,
             createPathFileToken: true,
             waitForLogin: true,
-
         })
         wppconnect.defaultLogger.level = 'debug'
         session.state = "CONNECTED";
@@ -185,13 +187,14 @@ module.exports = class Sessions {
             client.onStateChange(state => {
                 session.state = state;
                 if (state == "CONNECTED") {
-                    if (Sessions.options.jsonbinio_master_key !== undefined && session.browserSessionToken == undefined) {//se informou key pra salvar na nuvem
+                    console.log("session.browserSessionToken: " + session.browserSessionToken);
+                    if (Sessions.options.jsonbinio_master_key && !session.browserSessionToken) {//se informou key pra salvar na nuvem
                         setTimeout(async () => {
                             console.log("--------gravando token na nuvem...");
                             //salva dados do token da sessão na nuvem
                             const browserSessionToken = await client.getSessionTokenBrowser();
+                            console.log("browserSessionToken: " + JSON.stringify(browserSessionToken));
                             var data = JSON.stringify(browserSessionToken);
-                            console.log("--------browserSessionToken: " + browserSessionToken);
                             var config = {
                                 method: 'put',
                                 url: 'https://api.jsonbin.io/v3/b/' + Sessions.options.jsonbinio_bin_id,
@@ -199,16 +202,15 @@ module.exports = class Sessions {
                                     'Content-Type': 'application/json',
                                     'X-Master-Key': Sessions.options.jsonbinio_master_key,
                                     'X-Access-Key': Sessions.options.jsonbinio_access_key,
-                                    'versioning': 'false'
                                 },
                                 data: data
                             };
                             await axios(config)
                                 .then(function (response) {
-                                    console.log("--------" + JSON.stringify(response.data));
+                                    console.log("--------Axios response: " + JSON.stringify(response.data));
                                 })
                                 .catch(function (error) {
-                                    console.log("--------" + error);
+                                    console.log("--------Error: " + error);
                                 });
                         }, 2000);
                     }
@@ -218,11 +220,14 @@ module.exports = class Sessions {
             client.onMessage(async (message) => { // De olho em mensagens e ações
                 var session = Sessions.getSession(sessionName);
                 if (session.hook != null) {
+                    console.log("session.hook: " + session.hook);
                     var config = {
                         method: 'post',
                         url: session.hook,
                         headers: {
-                            'Content-Type': 'application/json'
+                            'Content-Type': 'application/json',
+                            'X-Master-Key': Sessions.options.jsonbinio_master_key,
+                            'X-Access-Key': Sessions.options.jsonbinio_access_key,
                         },
                         data: message
                     };
